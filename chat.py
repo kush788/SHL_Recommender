@@ -45,8 +45,8 @@ def generate_reply(messages, retrieved_items):
     for item in retrieved_items:
 
         catalog.append({
-            "name": item["name"],
-            "url": item["url"],
+            "name": item.get("name", ""),
+            "url": item.get("url") or item.get("link", ""),
             "description": item.get("description", ""),
             "test_type": get_test_type(item)
         })
