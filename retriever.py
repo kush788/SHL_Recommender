@@ -1,42 +1,35 @@
-import pickle
-import faiss
+import json
 
-from sentence_transformers import SentenceTransformer
+with open("catalog.json", "r", encoding="utf-8") as f:
+    catalog = json.load(f)
 
 
 class Retriever:
 
-    def __init__(self):
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
-
-        self.index = faiss.read_index("data/faiss.index")
-
-        with open("data/metadata.pkl", "rb") as f:
-            self.metadata = pickle.load(f)
-
     def search(self, query, top_k=10):
 
-        embedding = self.model.encode(
-            [query],
-            normalize_embeddings=True
-        )
+        query = query.lower()
 
-        scores, indices = self.index.search(embedding, top_k)
+        scored = []
 
-        results = []
+        for item in catalog:
 
-        for score, idx in zip(scores[0], indices[0]):
+            text = (
+                item.get("name", "")
+                + " "
+                + item.get("description", "")
+                + " "
+                + " ".join(item.get("keys", []))
+            ).lower()
 
-            if idx == -1:
-                continue
+            score = sum(word in text for word in query.split())
 
-            item = self.metadata[idx].copy()
+            if score > 0:
+                scored.append((score, item))
 
-            item["score"] = float(score)
+        scored.sort(reverse=True, key=lambda x: x[0])
 
-            results.append(item)
-
-        return results
+        return [x[1] for x in scored[:top_k]]
 
 
 retriever = Retriever()
